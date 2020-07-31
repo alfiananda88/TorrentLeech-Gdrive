@@ -49,7 +49,10 @@ from pyrogram import (
 def getFolderSize(p):
     from functools import partial
     prepend = partial(os.path.join, p)
-    return sum([(os.path.getsize(f) if os.path.isfile(f) else getFolderSize(f)) for f in map(prepend, os.listdir(p))])
+    return sum(
+        os.path.getsize(f) if os.path.isfile(f) else getFolderSize(f)
+        for f in map(prepend, os.listdir(p))
+    )
 
 async def upload_to_tg(
     message,
@@ -76,7 +79,7 @@ async def upload_to_tg(
         # number_of_files = len(directory_contents)
         LOGGER.info(directory_contents)
         new_m_esg = message
-        if not message.photo:
+        if not new_m_esg.photo:
             new_m_esg = await message.reply_text(
                 "Found {} files".format(len(directory_contents)),
                 quote=True
@@ -142,6 +145,7 @@ async def upload_to_gdrive(file_upload, message, messa_ge, g_id):
         fole.write("[DRIVE]\n")
         fole.write(f"{RCLONE_CONFIG}")
     destination = f'{DESTINATION_FOLDER}'
+    button = []
     if os.path.isfile(file_upload):
         tmp = subprocess.Popen(['rclone', 'copy', '--config=rclone.conf', f'/app/{file_upload}', 'DRIVE:'f'{destination}', '-v'], stdout = subprocess.PIPE)
         pro, cess = tmp.communicate()
@@ -163,7 +167,6 @@ async def upload_to_gdrive(file_upload, message, messa_ge, g_id):
         #tam_link = requests.utils.requote_uri(indexurl)
         gjay = size(os.path.getsize(file_upload))
         print(gjay)
-        button = []
         button.append([pyrogram.InlineKeyboardButton(text="☁️ CloudUrl ☁️", url=f"{gau_link}")])
         if INDEX_LINK:
             indexurl = f"{INDEX_LINK}/{file_upload}"
@@ -175,7 +178,6 @@ async def upload_to_gdrive(file_upload, message, messa_ge, g_id):
         await messa_ge.reply_text(f"🤖: {file_upload} has been Uploaded successfully to your Cloud <a href='tg://user?id={g_id}'>🤒</a>\n📀 Size: {gjay}", reply_markup=button_markup)
         #await message.edit_text(f"""🤖: {file_upload} has been Uploaded successfully to your cloud 🤒\n\n☁️ Cloud URL:  <a href="{gau_link}">FileLink</a>\nℹ️ Direct URL:  <a href="{tam_link}">IndexLink</a>""")
         os.remove(file_upload)
-        await del_it.delete()
     else:
         tt= os.path.join(destination, file_upload)
         print(tt)
@@ -201,7 +203,6 @@ async def upload_to_gdrive(file_upload, message, messa_ge, g_id):
         #print(tam_link)
         gjay = size(getFolderSize(file_upload))
         print(gjay)
-        button = []
         button.append([pyrogram.InlineKeyboardButton(text="☁️ CloudUrl ☁️", url=f"{gau_link}")])
         if INDEX_LINK:
             indexurl = f"{INDEX_LINK}/{file_upload}/"
@@ -214,7 +215,8 @@ async def upload_to_gdrive(file_upload, message, messa_ge, g_id):
         #await asyncio.sleep(EDIT_SLEEP_TIME_OUT)
         #await messa_ge.reply_text(f"""🤖: Folder has been Uploaded successfully to {tt} in your cloud 🤒\n\n☁️ Cloud URL:  <a href="{gau_link}">FolderLink</a>\nℹ️ Index Url:. <a href="{tam_link}">IndexLink</a>""")
         shutil.rmtree(file_upload)
-        await del_it.delete()
+
+    await del_it.delete()
 
 #
 
@@ -315,8 +317,6 @@ async def upload_single_file(message, local_file_name, caption_str, from_user, e
                         start_time
                     )
                 )
-            if thumb is not None:
-                os.remove(thumb)
         elif local_file_name.upper().endswith(("MP3", "M4A", "M4B", "FLAC", "WAV")):
             metadata = extractMetadata(createParser(local_file_name))
             duration = 0
@@ -371,8 +371,6 @@ async def upload_single_file(message, local_file_name, caption_str, from_user, e
                         start_time
                     )
                 )
-            if thumb is not None:
-                os.remove(thumb)
         else:
             thumb_image_path = None
             if os.path.isfile(thumbnail_location):
@@ -413,8 +411,8 @@ async def upload_single_file(message, local_file_name, caption_str, from_user, e
                         start_time
                     )
                 )
-            if thumb is not None:
-                os.remove(thumb)
+        if thumb is not None:
+            os.remove(thumb)
     except Exception as e:
         await message_for_progress_display.edit_text("**FAILED**\n" + str(e))
     else:
